@@ -318,6 +318,23 @@
                     setTimeout(() => lucide.createIcons(), 10);
                 };
 
+                // 自動清理功能：刪除 7 天前的資料
+                const autoCleanup = () => {
+                    const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000; // 七天的毫秒數
+                    const now = Date.now();
+                    const initialLength = kolList.value.length;
+
+                    // 過濾掉超過七天的資料 (利用 id 作為時間戳記判斷)
+                    kolList.value = kolList.value.filter(kol => {
+                        return (now - kol.id) < sevenDaysInMs;
+                    });
+
+                    if (kolList.value.length < initialLength) {
+                        console.log(`自動清理：已移除 ${initialLength - kolList.value.length} 筆超過 7 天的舊資料。`);
+                        saveToLocal(); // 儲存變更
+                    }
+                };
+
                 const openAddModal = () => {
                     isEditing.value = false;
                     form.value = { id: Date.now(), name: '', primaryLink: '', tier: '寶寶網紅', tags: [], platforms: { ig: '', fb: '', xhs: '', yt: '', tiktok: '', blog: '' }, note: '', createdAt: '' };
@@ -325,12 +342,9 @@
                     setTimeout(() => lucide.createIcons(), 50);
                 };
 
-                // 自動帶入邏輯
                 const handleAutoParse = () => {
                     const url = form.value.primaryLink.trim();
                     if (!url) return;
-
-                    // 1. 嘗試解析帳號名
                     let handle = '';
                     if (url.includes('instagram.com/')) {
                         handle = url.split('instagram.com/')[1].split('/')[0].split('?')[0];
@@ -345,20 +359,17 @@
                         handle = url.split('@')[1].split('/')[0];
                         form.value.platforms.tiktok = url;
                     }
-
                     if (handle) form.value.name = handle;
                 };
 
                 const saveKOL = () => {
                     if (!form.value.name) return alert('請填寫網紅名稱/帳號');
-                    
                     const dupIdx = kolList.value.findIndex(k => k.name === form.value.name && k.id !== form.value.id);
                     if (dupIdx !== -1) {
                         if (confirm(`重複警報：已有名單「${form.value.name}」，是否刪除舊筆並儲存新筆？`)) {
                             kolList.value.splice(dupIdx, 1);
                         } else { return; }
                     }
-
                     if (!isEditing.value) {
                         const now = new Date();
                         form.value.createdAt = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
@@ -367,7 +378,6 @@
                         const idx = kolList.value.findIndex(k => k.id === form.value.id);
                         kolList.value[idx] = { ...form.value };
                     }
-
                     saveToLocal();
                     showModal.value = false;
                     setTimeout(() => lucide.createIcons(), 10);
@@ -441,16 +451,13 @@
                     if (kolList.value.length === 0) return alert('清單為空，無法同步');
                     isSyncing.value = true;
                     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAFMdwbeGbh7FO-3HH638NSrDg8SXlTpnNIgKTdvmUM8MPN3g3ipqHLuPTXjCBTpg/exec'; 
-                    
                     try {
-                        // GAS 同步通常使用 POST 配合 no-cors
                         await fetch(SCRIPT_URL, {
                             method: 'POST',
                             mode: 'no-cors',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ user: syncUser.value, data: kolList.value })
                         });
-                        
                         alert(`【${syncUser.value}】同步成功！數據已推送到雲端。`);
                         showSyncModal.value = false;
                         activeTab.value = 'list';
@@ -462,6 +469,7 @@
                 };
 
                 onMounted(() => {
+                    autoCleanup(); // 啟動時自動檢查並清理七天前資料
                     lucide.createIcons();
                 });
 
