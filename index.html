@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOL Manager Plus</title>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: 書寫體與通用字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        milk: {
+                            light: '#f5ebe0', // 淺奶茶
+                            dark: '#d5bdaf',  // 深奶茶
+                            accent: '#e3d5ca',
+                            deep: '#3d3028'    // 深色模式背景
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .font-kol { font-family: 'Dancing Script', cursive; }
+        .font-main { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 玻璃擬態 */
+        .glass {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass {
+            background: rgba(61, 48, 40, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 選取狀態發光 */
+        .tab-active {
+            border: 1px solid rgba(212, 163, 115, 0.8);
+            box-shadow: 0 0 15px rgba(212, 163, 115, 0.4);
+            color: #d4a373;
+        }
+
+        /* 隱藏滾動條但保持功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 動畫 */
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="font-main transition-colors duration-300 overflow-x-hidden" :class="isDark ? 'bg-milk-deep text-white' : 'bg-milk-light text-gray-800'" id="app">
+
+    <!-- 頂部 Header -->
+    <header class="p-6 pb-2">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="font-kol text-6xl tracking-[0.5em] w-full text-center select-none" 
+                :class="isDark ? 'text-milk-dark' : 'text-milk-deep'">
+                KOL
+            </h1>
+        </div>
+        
+        <!-- 功能列 -->
+        <div class="flex justify-between items-center px-2">
+            <p class="text-sm font-bold">總數：{{ kolList.length }} 位網紅</p>
+            <button @click="toggleDarkMode" class="p-2 rounded-full glass flex items-center gap-2">
+                <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-5 h-5"></i>
+                <span class="text-xs">{{ isDark ? '切換淺色' : '切換深色' }}</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="px-4 pb-32">
+        <!-- 篩選系統 (收合) -->
+        <section class="mb-4">
+            <button @click="showFilter = !showFilter" class="w-full glass rounded-2xl p-3 flex justify-between items-center mb-2">
+                <span class="flex items-center gap-2"><i data-lucide="filter" class="w-4 h-4"></i> 篩選分類標籤</span>
+                <i :data-lucide="showFilter ? 'chevron-up' : 'chevron-down'"></i>
+            </button>
+            <div v-if="showFilter" class="glass rounded-2xl p-3 flex flex-wrap gap-2 slide-up">
+                <button v-for="tag in allTags" :key="tag" 
+                    @click="toggleFilterTag(tag)"
+                    :class="selectedFilters.includes(tag) ? 'bg-orange-300 text-white' : 'bg-gray-200 dark:bg-gray-700'"
+                    class="px-3 py-1 rounded-full text-xs transition">
+                    #{{ tag }}
+                </button>
+            </div>
+        </section>
+
+        <!-- 網紅列表 -->
+        <div class="space-y-4">
+            <div v-for="(kol, index) in filteredList" :key="kol.id" 
+                 class="glass rounded-3xl p-4 relative overflow-hidden transition-all hover:shadow-lg border-l-4"
+                 :style="{ borderLeftColor: getTierColor(kol.tier) }">
+                
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                            {{ kol.name }} 
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/30">{{ kol.tier }}</span>
+                        </h3>
+                        <p class="text-[10px] opacity-60">{{ kol.createdAt }}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="editKOL(kol)" class="text-blue-400 p-1"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button @click="deleteKOL(kol.id)" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- 平台 Icons -->
+                <div class="flex flex-wrap gap-3 mt-3">
+                    <a v-for="(link, platform) in kol.platforms" :key="platform" 
+                       v-show="link" :href="link" target="_blank"
+                       class="p-2 rounded-xl bg-white/20 hover:scale-110 transition">
+                        <img :src="getIcon(platform)" :alt="platform" class="w-5 h-5 object-contain">
+                    </a>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-1">
+                    <span v-for="tag in kol.tags" :key="tag" class="text-[10px] bg-orange-100 dark:bg-orange-900/40 text-orange-600 px-2 py-0.5 rounded">#{{ tag }}</span>
+                </div>
+                
+                <p v-if="kol.note" class="mt-2 text-xs italic opacity-80 border-t border-white/10 pt-2 text-gray-500 dark:text-gray-300">
+                    備註: {{ kol.note }}
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部導覽列 (玻璃擬態) -->
+    <nav class="fixed bottom-0 left-0 right-0 glass h-20 flex justify-around items-center px-6 rounded-t-[40px] z-50">
+        <button @click="openAddModal" class="flex flex-col items-center gap-1 group">
+            <div class="p-3 rounded-2xl group-active:scale-95 transition-all" :class="activeTab === 'add' ? 'tab-active' : ''">
+                <i data-lucide="plus-circle" class="w-6 h-6"></i>
+            </div>
+            <span class="text-[10px]">新增網紅</span>
+        </button>
+        <button @click="openSyncModal" class="flex flex-col items-center gap-1 group">
+            <div class="p-3 rounded-2xl group-active:scale-95 transition-all" :class="activeTab === 'sync' ? 'tab-active' : ''">
+                <i data-lucide="cloud-upload" class="w-6 h-6"></i>
+            </div>
+            <span class="text-[10px]">同步試算表</span>
+        </button>
+    </nav>
+
+    <!-- 新增/編輯 彈窗 -->
+    <div v-if="showModal" class="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+        <div class="w-full max-w-md bg-white dark:bg-[#4a3b32] rounded-t-[40px] p-8 max-h-[90vh] overflow-y-auto slide-up">
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" @click="showModal = false"></div>
+            <h2 class="text-xl font-bold mb-6 text-center">{{ isEditing ? '編輯網紅資料' : '新增網紅' }}</h2>
+            
+            <div class="space-y-4">
+                <!-- 連結與自動帶入 -->
+                <div class="flex gap-2">
+                    <input v-model="form.primaryLink" placeholder="輸入主要平台連結 (IG/FB/YT...)" class="flex-1 p-3 rounded-2xl border dark:bg-milk-deep border-none bg-gray-100">
+                    <button @click="handleAutoFetch" class="bg-orange-400 text-white px-4 rounded-2xl text-xs">自動帶入</button>
+                </div>
+
+                <input v-model="form.name" placeholder="網紅名稱" class="w-full p-3 rounded-2xl bg-gray-100 dark:bg-milk-deep border-none">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <select v-model="form.tier" class="p-3 rounded-2xl bg-gray-100 dark:bg-milk-deep border-none text-sm">
+                        <option value="寶寶網紅">寶寶網紅 (1k-10k)</option>
+                        <option value="網紅">網紅 (10k-30k)</option>
+                        <option value="鑽石級網紅">鑽石級網紅 (30k-50k)</option>
+                    </select>
+                    <input v-model="form.followers" placeholder="粉絲數" class="p-3 rounded-2xl bg-gray-100 dark:bg-milk-deep border-none text-sm">
+                </div>
+
+                <!-- 標籤管理 -->
+                <div class="space-y-2">
+                    <p class="text-xs font-bold">分類標籤 (可複選/新增)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button v-for="tag in allTags" :key="tag" 
+                            @click="toggleFormTag(tag)"
+                            :class="form.tags.includes(tag) ? 'bg-orange-300 text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                            class="px-3 py-1 rounded-full text-[10px]">
+                            {{ tag }}
+                        </button>
+                        <div class="flex gap-1 items-center">
+                            <input v-model="newTagName" placeholder="新標籤" class="text-[10px] p-1 w-20 border-b bg-transparent outline-none">
+                            <button @click="addNewTag" class="text-orange-500 text-xs">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 其他平台連結 -->
+                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                    <input v-for="(val, key) in form.platforms" :key="key" v-model="form.platforms[key]" :placeholder="key.toUpperCase() + ' 連結'" class="p-2 rounded-xl bg-gray-100 dark:bg-milk-deep border-none">
+                </div>
+
+                <textarea v-model="form.note" placeholder="備註事項" class="w-full p-3 rounded-2xl bg-gray-100 dark:bg-milk-deep border-none h-20 text-sm"></textarea>
+
+                <div class="flex gap-4 pt-4">
+                    <button @click="showModal = false" class="flex-1 p-4 rounded-2xl bg-gray-200 dark:bg-gray-600">取消</button>
+                    <button @click="saveKOL" class="flex-1 p-4 rounded-2xl bg-orange-400 text-white font-bold">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 同步試算表彈窗 -->
+    <div v-if="showSyncModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
+        <div class="w-full max-w-sm glass rounded-[40px] p-8 slide-up">
+            <h2 class="text-xl font-bold mb-6 text-center">同步至 Google Sheet</h2>
+            <p class="text-sm mb-4 opacity-70 text-center">請選擇目前的操作使用者：</p>
+            <div class="flex flex-col gap-3">
+                <button v-for="u in ['媽咪', 'Winnie', '蟬說']" :key="u" 
+                    @click="syncUser = u"
+                    :class="syncUser === u ? 'border-2 border-orange-400 bg-orange-100 dark:bg-orange-900/40' : 'bg-white/20'"
+                    class="p-4 rounded-2xl text-center font-bold transition">
+                    {{ u }}
+                </button>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button @click="showSyncModal = false" class="flex-1 p-3 rounded-2xl bg-gray-200 dark:bg-gray-600">取消</button>
+                <button @click="submitToGoogleSheet" :disabled="!syncUser || isSyncing" class="flex-1 p-3 rounded-2xl bg-orange-400 text-white font-bold disabled:opacity-50">
+                    {{ isSyncing ? '同步中...' : '確認同步' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                const isDark = ref(false);
+                const showModal = ref(false);
+                const showSyncModal = ref(false);
+                const showFilter = ref(false);
+                const isEditing = ref(false);
+                const activeTab = ref('list');
+                const isSyncing = ref(false);
+
+                const kolList = ref(JSON.parse(localStorage.getItem('kol_data') || '[]'));
+                const allTags = ref(JSON.parse(localStorage.getItem('kol_tags') || '["美妝", "育兒", "旅遊", "美食", "穿搭"]'));
+                const selectedFilters = ref([]);
+                
+                const form = ref({
+                    id: null,
+                    name: '',
+                    primaryLink: '',
+                    tier: '寶寶網紅',
+                    followers: '',
+                    tags: [],
+                    platforms: { ig: '', fb: '', xhs: '', yt: '', tiktok: '', blog: '' },
+                    note: '',
+                    createdAt: ''
+                });
+
+                const newTagName = ref('');
+                const syncUser = ref('');
+
+                // 顏色與圖標邏輯
+                const getTierColor = (tier) => {
+                    if (tier === '寶寶網紅') return '#d4a373';
+                    if (tier === '網紅') return '#bc6c25';
+                    if (tier === '鑽石級網紅') return '#457b9d';
+                    return '#ccc';
+                };
+
+                const getIcon = (p) => {
+                    const icons = {
+                        ig: 'https://cdn-icons-png.flaticon.com/512/174/174855.png',
+                        fb: 'https://cdn-icons-png.flaticon.com/512/733/733547.png',
+                        xhs: 'https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/3d/8d/68/3d8d6892-2580-c081-9b1a-853f6068257d/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-10.png/512x512bb.jpg',
+                        yt: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png',
+                        tiktok: 'https://cdn-icons-png.flaticon.com/512/3046/3046121.png',
+                        blog: 'https://cdn-icons-png.flaticon.com/512/60/60736.png'
+                    };
+                    return icons[p];
+                };
+
+                // 功能邏輯
+                const toggleDarkMode = () => {
+                    isDark.value = !isDark.value;
+                    document.documentElement.classList.toggle('dark');
+                    setTimeout(() => lucide.createIcons(), 10);
+                };
+
+                const openAddModal = () => {
+                    isEditing.value = false;
+                    form.value = { id: Date.now(), name: '', primaryLink: '', tier: '寶寶網紅', followers: '', tags: [], platforms: { ig: '', fb: '', xhs: '', yt: '', tiktok: '', blog: '' }, note: '', createdAt: '' };
+                    showModal.value = true;
+                };
+
+                const handleAutoFetch = () => {
+                    const url = form.value.primaryLink.toLowerCase();
+                    if (!url) return alert('請先輸入網址');
+                    
+                    // 模擬真實資料抓取邏輯 (Real data requires backend API)
+                    if (url.includes('instagram.com')) {
+                        form.value.name = "模擬 IG 創作者";
+                        form.value.platforms.ig = url;
+                        form.value.followers = "15000";
+                    } else if (url.includes('facebook.com')) {
+                        form.value.name = "模擬 FB 粉絲團";
+                        form.value.platforms.fb = url;
+                        form.value.followers = "5000";
+                    } else if (url.includes('youtube.com')) {
+                        form.value.name = "模擬 YT 頻道";
+                        form.value.platforms.yt = url;
+                        form.value.followers = "45000";
+                    }
+                    
+                    // 自動判斷分級
+                    const f = parseInt(form.value.followers);
+                    if (f < 10000) form.value.tier = '寶寶網紅';
+                    else if (f < 30000) form.value.tier = '網紅';
+                    else form.value.tier = '鑽石級網紅';
+
+                    alert('已模擬抓取資料，請手動確認名稱與粉絲數。');
+                };
+
+                const saveKOL = () => {
+                    if (!form.value.name) return alert('請填寫名稱');
+                    
+                    // 重複性檢查
+                    const duplicate = kolList.value.find(k => k.name === form.value.name && k.id !== form.value.id);
+                    if (duplicate) {
+                        if (confirm(`已有重複網紅「${form.value.name}」，是否刪除舊有資料並新增？`)) {
+                            kolList.value = kolList.value.filter(k => k.id !== duplicate.id);
+                        } else { return; }
+                    }
+
+                    if (!isEditing.value) {
+                        form.value.createdAt = new Date().toLocaleString();
+                        kolList.value.unshift({ ...form.value });
+                    } else {
+                        const index = kolList.value.findIndex(k => k.id === form.value.id);
+                        kolList.value[index] = { ...form.value };
+                    }
+
+                    localStorage.setItem('kol_data', JSON.stringify(kolList.value));
+                    showModal.value = false;
+                    setTimeout(() => lucide.createIcons(), 10);
+                };
+
+                const deleteKOL = (id) => {
+                    if (confirm('確定要刪除嗎？')) {
+                        kolList.value = kolList.value.filter(k => k.id !== id);
+                        localStorage.setItem('kol_data', JSON.stringify(kolList.value));
+                    }
+                };
+
+                const editKOL = (kol) => {
+                    isEditing.value = true;
+                    form.value = JSON.parse(JSON.stringify(kol));
+                    showModal.value = true;
+                };
+
+                const toggleFilterTag = (tag) => {
+                    if (selectedFilters.value.includes(tag)) {
+                        selectedFilters.value = selectedFilters.value.filter(t => t !== tag);
+                    } else {
+                        selectedFilters.value.push(tag);
+                    }
+                };
+
+                const toggleFormTag = (tag) => {
+                    if (form.value.tags.includes(tag)) {
+                        form.value.tags = form.value.tags.filter(t => t !== tag);
+                    } else {
+                        form.value.tags.push(tag);
+                    }
+                };
+
+                const addNewTag = () => {
+                    if (newTagName.value && !allTags.value.includes(newTagName.value)) {
+                        allTags.value.push(newTagName.value);
+                        form.value.tags.push(newTagName.value);
+                        localStorage.setItem('kol_tags', JSON.stringify(allTags.value));
+                        newTagName.value = '';
+                    }
+                };
+
+                const filteredList = computed(() => {
+                    if (selectedFilters.value.length === 0) return kolList.value;
+                    return kolList.value.filter(k => 
+                        selectedFilters.value.every(f => k.tags.includes(f))
+                    );
+                });
+
+                const openSyncModal = () => {
+                    activeTab.value = 'sync';
+                    showSyncModal.value = true;
+                };
+
+                // Google Sheet 同步邏輯 (部署 Apps Script 後替換 URL)
+                const submitToGoogleSheet = async () => {
+                    isSyncing.value = true;
+                    const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; 
+                    
+                    try {
+                        // 這裡模擬發送，真實環境需配合下方的 Apps Script
+                        console.log('同步資料：', kolList.value, '使用者：', syncUser.value);
+                        
+                        // 範例 Fetch 請求
+                        /*
+                        await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({ user: syncUser.value, data: kolList.value })
+                        });
+                        */
+                        
+                        alert(`同步完成！操作者：${syncUser.value}`);
+                        showSyncModal.value = false;
+                        activeTab.value = 'list';
+                    } catch (e) {
+                        alert('同步失敗，請確認 Apps Script 部署。');
+                    } finally {
+                        isSyncing.value = false;
+                    }
+                };
+
+                onMounted(() => {
+                    lucide.createIcons();
+                });
+
+                return {
+                    isDark, showModal, showSyncModal, showFilter, isEditing, activeTab, isSyncing,
+                    kolList, allTags, selectedFilters, form, newTagName, syncUser,
+                    filteredList, toggleDarkMode, openAddModal, handleAutoFetch, 
+                    saveKOL, deleteKOL, editKOL, toggleFilterTag, toggleFormTag, 
+                    addNewTag, getTierColor, getIcon, openSyncModal, submitToGoogleSheet
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
