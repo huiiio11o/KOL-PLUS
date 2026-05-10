@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KOL Manager Plus - Earth Tone Edition</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>KOL Collection App v6.4 - Final</title>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
         tailwind.config = {
@@ -15,19 +16,13 @@
             theme: {
                 extend: {
                     colors: {
-                        earth: {
-                            sable: '#d6cec6',
-                            keestone: '#f1e4d1',
-                            adobebuff: '#e5d2ba',
-                            cobblestone: '#b59e87',
-                            camel: '#e1aa69',
-                            creambeige: '#dcc6b0',
-                            platinumgray: '#a59489',
-                            autumntan: '#a7623d',
-                            coralbeige: '#bd9a83',
-                            charcoal: '#4a3731',
-                            terracotta: '#b55c3e',
-                            rosewood: '#925345'
+                        morandi: {
+                            light: '#F2E9E4',
+                            dark: '#22223B',
+                            accent: '#9A8C98',
+                            soft: '#C9ADA7',
+                            green: '#84A98C', // 莫蘭迪綠
+                            'green-light': '#CAD2C5' // 莫蘭迪淺綠
                         }
                     }
                 }
@@ -35,396 +30,279 @@
         }
     </script>
     <style>
+        [v-cloak] { display: none; }
+        body { font-family: 'Noto Sans TC', sans-serif; transition: background-color 0.4s ease; overflow-x: hidden; font-size: 1.125rem; }
         .font-kol { font-family: 'Dancing Script', cursive; }
-        .font-main { font-family: 'Noto Sans TC', sans-serif; }
-        .glass {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        .dark .glass {
-            background: rgba(74, 55, 49, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .fab-press:active { transform: scale(0.9); }
-        .slide-up { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .glass { background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .dark .glass { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border-radius: 2rem; border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
+        .dark .glass-card { background: rgba(40, 40, 60, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .tab-active { border: 2px solid #9A8C98; box-shadow: 0 0 15px rgba(154, 140, 152, 0.4); color: #9A8C98; font-weight: bold; }
+        input, select, textarea { background: #ffffff; border-radius: 1.25rem; border: 2px solid rgba(154, 140, 152, 0.3); padding: 18px; outline: none; width: 100%; font-size: 1.15rem !important; color: #22223B; }
+        .dark input, .dark select, .dark textarea { background: #2D3047; border: 2px solid rgba(255, 255, 255, 0.1); color: #F2E9E4; }
+        label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 1.1rem; color: #4A4E69; }
+        .dark label { color: #C9ADA7; }
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="font-main transition-colors duration-500 min-h-screen select-none" 
-      :class="isDark ? 'bg-earth-charcoal text-earth-keestone' : 'bg-earth-keestone text-earth-charcoal'" id="app">
+<body class="bg-morandi-light text-slate-700 dark:bg-morandi-dark dark:text-gray-100 min-h-screen">
 
-    <!-- 頂部 Header -->
-    <header class="p-6 pb-2">
-        <h1 class="font-kol text-6xl tracking-[0.5em] w-full text-center py-6 overflow-hidden whitespace-nowrap" 
-            :class="isDark ? 'text-earth-camel' : 'text-earth-autumntan'">
-            KOL
-        </h1>
-        
-        <div class="flex justify-between items-center px-1 mt-2">
-            <div>
-                <span class="text-[10px] uppercase font-bold opacity-60">數據統計</span>
-                <p class="text-2xl font-black">{{ kolList.length }} <span class="text-sm font-normal">位</span></p>
-            </div>
-            
-            <button @click="toggleDarkMode" class="flex items-center gap-2 p-3 rounded-2xl glass shadow-sm active:scale-90 transition-all">
-                <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-5 h-5"></i>
-                <span class="text-xs font-bold">{{ isDark ? '太陽：淺色' : '月亮：深色' }}</span>
+<div id="app" v-cloak class="pb-28">
+    <header class="p-4 px-6 text-center">
+        <div class="flex justify-between items-center mb-2">
+            <button @click="toggleDarkMode" class="w-10 h-10 rounded-full glass flex items-center justify-center active:scale-90 transition">
+                <i v-if="isDark" class="fas fa-sun text-yellow-300 text-xl"></i>
+                <i v-else class="fas fa-moon text-slate-500 text-xl"></i>
             </button>
+            <div class="flex gap-2">
+                <div class="glass px-4 py-1.5 rounded-full text-xs font-bold">總數: {{ kols.length }}</div>
+                <button @click="ui.syncModal = true" class="bg-morandi-green text-white px-4 py-1.5 rounded-full text-xs flex items-center gap-2 shadow-lg active:scale-95 transition font-bold">
+                    <i class="fas fa-cloud-upload-alt"></i> 同步
+                </button>
+            </div>
         </div>
+        <h1 class="font-kol italic text-6xl w-full text-morandi-accent opacity-90 my-1 select-none flex justify-between px-2">
+            <span>K</span><span>O</span><span>L</span>
+        </h1>
     </header>
 
-    <main class="px-5 pt-4 pb-32">
-        <!-- 篩選器 -->
-        <section class="mb-6">
-            <div class="flex items-center gap-2 mb-3 px-1">
-                <i data-lucide="tag" class="w-4 h-4 opacity-60"></i>
-                <span class="text-xs font-bold uppercase tracking-widest">分類標籤篩選</span>
+    <nav class="flex justify-center gap-4 px-6 mb-4">
+        <button @click="ui.tab = 'list'" :class="ui.tab === 'list' ? 'tab-active' : 'glass'" class="flex-1 py-4 rounded-2xl flex items-center justify-center gap-2 text-lg">
+            <i class="fas fa-th-list"></i> 列表
+        </button>
+        <button @click="ui.tab = 'calendar'" :class="ui.tab === 'calendar' ? 'tab-active' : 'glass'" class="flex-1 py-4 rounded-2xl flex items-center justify-center gap-2 text-lg">
+            <i class="fas fa-calendar-day"></i> 統計
+        </button>
+    </nav>
+
+    <main v-show="ui.tab === 'list'" class="px-6 space-y-6">
+        <section class="glass-card overflow-hidden">
+            <div @click="ui.showFilterSystem = !ui.showFilterSystem" class="p-4 flex justify-between items-center cursor-pointer bg-black/5 dark:bg-white/5 active:bg-black/10">
+                <span class="font-bold"><i class="fas fa-filter mr-2 text-morandi-accent"></i>篩選網紅</span>
+                <i :class="ui.showFilterSystem ? 'fa-chevron-up' : 'fa-chevron-down'" class="fas text-sm opacity-50"></i>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <div v-for="tag in allTags" :key="tag" class="relative group">
-                    <button @click="toggleFilterTag(tag)"
-                        :class="selectedFilters.includes(tag) ? 'bg-earth-terracotta text-white shadow-lg scale-105' : 'bg-earth-adobebuff/50 dark:bg-earth-rosewood/50'"
-                        class="pl-3 pr-8 py-2 rounded-xl text-xs font-medium transition-all flex items-center">
-                        #{{ tag }}
-                    </button>
-                    <button @click.stop="deleteGlobalTag(tag)" class="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-earth-terracotta opacity-40 hover:opacity-100">
-                        <i data-lucide="x-circle" class="w-4 h-4"></i>
-                    </button>
+            <div v-show="ui.showFilterSystem" class="p-6 space-y-8 border-t border-morandi-accent/10">
+                <div>
+                    <label class="text-morandi-accent text-sm">分類標籤</label>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <button v-for="cat in allCategories" @click="toggleFilterTag(cat)"
+                            :class="filterState.tags.includes(cat) ? 'bg-morandi-accent text-white shadow-md' : 'border border-morandi-accent/30 text-morandi-accent opacity-60'"
+                            class="text-xs px-4 py-2 rounded-full font-bold transition"># {{cat}}</button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 網紅列表 -->
-        <div class="space-y-4">
-            <div v-for="kol in filteredList" :key="kol.id" 
-                 class="glass rounded-[32px] p-5 relative overflow-hidden transition-all border-l-[10px] active:scale-[0.98]"
-                 :style="{ borderLeftColor: getTierColor(kol.tier) }">
-                
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="font-bold text-xl">{{ kol.name }}</h3>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/20" :style="{ color: getTierColor(kol.tier) }">{{ kol.tier }}</span>
-                        </div>
-                        <p class="text-[10px] opacity-40 mt-1 flex items-center gap-1">
-                            <i data-lucide="calendar" class="w-3 h-3"></i> {{ kol.createdAt }}
-                        </p>
+        <div v-for="kol in filteredKols" :key="kol.id" class="glass-card p-6 border-l-[6px] transition-all" :style="{ borderLeftColor: kol.synced ? '#84A98C' : '#9A8C98' }">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <h3 class="text-2xl font-bold">{{ kol.name }}</h3>
+                        <span v-if="kol.synced" class="text-[10px] text-white bg-[#84A98C] px-2 py-0.5 rounded-full flex items-center font-bold">
+                            <i class="fas fa-check-double mr-1"></i> 已同步
+                        </span>
+                        <a :href="kol.url" target="_blank" class="text-morandi-accent text-2xl ml-auto"><i :class="getPlatformIcon(kol.url)"></i></a>
                     </div>
-                    <div class="flex gap-1">
-                        <button @click="editKOL(kol)" class="p-2 text-earth-camel"><i data-lucide="edit-3" class="w-5 h-5"></i></button>
-                        <button @click="deleteKOL(kol.id)" class="p-2 text-earth-terracotta"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    <div class="text-xs opacity-40 mb-3">{{ kol.createdAt }}</div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="text-xs px-3 py-1 rounded-full bg-slate-200/60 dark:bg-slate-700/60 font-bold">{{ kol.rank }}</span>
+                        <span v-for="tag in kol.tags" class="text-xs px-3 py-1 rounded-full border border-morandi-accent text-morandi-accent font-bold">#{{ tag }}</span>
                     </div>
+                    <p class="text-sm opacity-70 italic">{{ kol.note || '無備註資訊' }}</p>
                 </div>
-
-                <div class="flex flex-wrap gap-4 mt-5">
-                    <div v-for="(link, platform) in kol.platforms" :key="platform" v-show="link" 
-                         class="bg-white/30 dark:bg-black/20 p-2 rounded-2xl">
-                        <a :href="link" target="_blank" class="block hover:scale-110 transition">
-                            <img :src="getIcon(platform)" class="w-6 h-6 rounded-md object-cover shadow-sm">
-                        </a>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex flex-wrap gap-1.5">
-                    <span v-for="tag in kol.tags" :key="tag" class="text-[10px] border border-earth-autumntan/30 text-earth-autumntan px-2 py-0.5 rounded-md">#{{ tag }}</span>
-                </div>
-                
-                <div v-if="kol.note" class="mt-4 p-3 rounded-2xl bg-earth-adobebuff/30 dark:bg-earth-rosewood/30 text-xs italic opacity-70 leading-relaxed border-t border-white/5">
-                    {{ kol.note }}
+                <div class="flex flex-col gap-5 ml-4">
+                    <button @click="editKol(kol)" class="text-slate-400 hover:text-blue-500 text-lg"><i class="fas fa-edit"></i></button>
+                    <button @click="deleteKol(kol.id)" class="text-slate-400 hover:text-red-500 text-lg"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- 漂浮新增按鈕 (FAB) -->
-    <button @click="openAddModal" 
-            class="fixed bottom-24 right-6 w-16 h-16 bg-earth-terracotta text-white rounded-full shadow-[0_10px_30px_rgba(181,92,62,0.4)] flex items-center justify-center z-50 fab-press hover:rotate-90 transition-all duration-300">
-        <i data-lucide="plus" class="w-8 h-8"></i>
+    <main v-show="ui.tab === 'calendar'" class="px-6">
+        <div class="glass-card p-6">
+            <div class="flex justify-between items-center mb-6">
+                <button @click="changeMonth(-1)" class="w-10 h-10 glass rounded-full flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
+                <h2 class="text-xl font-bold text-morandi-accent">{{ calendarTitle }}</h2>
+                <button @click="changeMonth(1)" class="w-10 h-10 glass rounded-full flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="grid grid-cols-7 gap-2 text-center opacity-40 text-xs font-bold mb-2">
+                <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+            </div>
+            <div class="grid grid-cols-7 gap-2">
+                <div v-for="date in calendarDays" :key="date.full" :class="[date.isCurrentMonth ? '' : 'opacity-10', date.count > 0 ? 'bg-morandi-green text-white shadow-lg' : 'glass']" class="h-14 rounded-xl flex flex-col items-center justify-center transition-all">
+                    <span class="text-xs font-bold">{{ date.day }}</span>
+                    <span v-if="date.count > 0" class="text-[10px] font-black">{{ date.count }}</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <button @click="openModal" class="fixed bottom-10 right-6 w-20 h-20 bg-morandi-accent text-white rounded-full flex items-center justify-center text-3xl shadow-xl active:scale-90 transition z-50">
+        <i class="fas fa-plus"></i>
     </button>
 
-    <!-- 底部導覽列 -->
-    <nav class="fixed bottom-0 left-0 right-0 glass h-20 flex justify-around items-center px-10 rounded-t-[40px] z-[45] border-t border-white/20">
-        <button @click="activeTab = 'list'" class="flex flex-col items-center gap-1" :class="activeTab === 'list' ? 'text-earth-terracotta' : 'opacity-40'">
-            <i data-lucide="layout-grid" class="w-6 h-6"></i>
-            <span class="text-[10px] font-bold">名單列表</span>
-        </button>
-        <button @click="openSyncModal" class="flex flex-col items-center gap-1" :class="activeTab === 'sync' ? 'text-earth-terracotta' : 'opacity-40'">
-            <i data-lucide="cloud-upload" class="w-6 h-6"></i>
-            <span class="text-[10px] font-bold">同步試算表</span>
-        </button>
-    </nav>
-
-    <!-- 新增/編輯 彈窗 -->
-    <div v-if="showModal" class="fixed inset-0 z-[100] flex items-end justify-center bg-earth-charcoal/80 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-earth-keestone dark:bg-earth-charcoal rounded-t-[40px] p-8 max-h-[92vh] overflow-y-auto no-scrollbar shadow-2xl slide-up">
-            <div class="w-12 h-1.5 bg-earth-platinumgray/30 rounded-full mx-auto mb-8" @click="showModal = false"></div>
-            <h2 class="text-2xl font-black mb-8 text-center tracking-widest text-earth-autumntan">{{ isEditing ? '編輯資料' : '新增網紅名單' }}</h2>
-            
+    <div v-if="ui.modal" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-md" @click="ui.modal = false"></div>
+        <div class="glass-card w-full max-w-xl p-8 relative z-[101] max-h-[90vh] overflow-y-auto rounded-t-[3rem] sm:rounded-[3rem] animate-slide-up">
+            <h2 class="text-2xl font-black mb-6">{{ form.id ? '編輯網紅' : '新增網紅' }}</h2>
             <div class="space-y-6">
-                <div class="space-y-2">
-                    <label class="text-xs font-bold opacity-60 px-1">主要平台連結</label>
-                    <input v-model="form.primaryLink" @input="handleAutoParse" placeholder="貼上 IG / FB / YT 連結..." 
-                           class="w-full p-4 rounded-2xl dark:bg-earth-rosewood bg-white border-none outline-none text-sm ring-1 ring-earth-adobebuff">
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-xs font-bold opacity-60 px-1">網紅名稱</label>
-                    <input v-model="form.name" placeholder="例如：maillard_girl" class="w-full p-4 rounded-2xl dark:bg-earth-rosewood bg-white border-none outline-none ring-1 ring-earth-adobebuff">
-                </div>
-                
-                <div class="space-y-2">
-                    <label class="text-xs font-bold opacity-60 px-1">等級分類</label>
-                    <select v-model="form.tier" class="w-full p-4 rounded-2xl dark:bg-earth-rosewood bg-white border-none outline-none text-sm appearance-none ring-1 ring-earth-adobebuff">
-                        <option value="寶寶網紅">寶寶網紅 (1k-10k)</option>
-                        <option value="網紅">網紅 (10k-30k)</option>
-                        <option value="鑽石級網紅">鑽石級網紅 (30k-50k)</option>
-                        <option value="大網紅(50000以上)">大網紅(50,000以上)</option>
-                    </select>
-                </div>
-
-                <div class="space-y-3">
-                    <label class="text-xs font-bold opacity-60 px-1">整合平台連結庫</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div v-for="(val, key) in form.platforms" :key="key" class="flex items-center gap-2 bg-white dark:bg-earth-rosewood p-3 rounded-2xl ring-1 ring-earth-adobebuff">
-                            <img :src="getIcon(key)" class="w-5 h-5 rounded-md grayscale opacity-50">
-                            <input v-model="form.platforms[key]" :placeholder="key.toUpperCase()" class="bg-transparent text-[10px] outline-none w-full">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <label class="text-xs font-bold opacity-60 px-1">分類標籤</label>
-                    <div class="flex flex-wrap gap-2">
-                        <button v-for="tag in allTags" :key="tag" @click="toggleFormTag(tag)"
-                            :class="form.tags.includes(tag) ? 'bg-earth-autumntan text-white shadow-md' : 'bg-earth-creambeige dark:bg-white/10'"
-                            class="px-4 py-2 rounded-xl text-xs font-medium transition-all">
-                            {{ tag }}
-                        </button>
-                        <div class="flex gap-1 items-center bg-earth-terracotta/10 rounded-xl px-3 border border-dashed border-earth-terracotta">
-                            <input v-model="newTagName" placeholder="新分類" class="text-xs py-2 w-16 bg-transparent outline-none">
-                            <button @click="addNewTag" class="text-earth-terracotta font-bold">+</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-xs font-bold opacity-60 px-1">備註欄位</label>
-                    <textarea v-model="form.note" placeholder="記錄合作內容或風格備註..." class="w-full p-4 rounded-2xl dark:bg-earth-rosewood bg-white border-none outline-none h-24 text-sm ring-1 ring-earth-adobebuff"></textarea>
-                </div>
-
-                <div class="flex gap-4 pt-6 pb-10">
-                    <button @click="showModal = false" class="flex-1 p-5 rounded-[24px] bg-earth-creambeige dark:bg-white/10 font-bold text-xs">取消</button>
-                    <button @click="saveKOL" class="flex-1 p-5 rounded-[24px] bg-earth-terracotta text-white font-bold shadow-lg active:scale-95 text-xs">儲存名單</button>
-                </div>
+                <div><label>網站連結</label><input v-model="form.url" type="text" placeholder="貼上網址..."><button @click="autoFill" class="w-full mt-2 bg-morandi-accent text-white py-3 rounded-2xl font-bold">自動解析帳號</button></div>
+                <div><label>帳號名稱</label><input v-model="form.name" type="text"></div>
+                <div><label>主要平台</label><input v-model="form.platform" type="text"></div>
+                <div><label>網紅等級</label><select v-model="form.rank"><option v-for="r in rankOptions" :value="r.name">{{r.name}}</option></select></div>
+                <div><label>標籤</label><div class="flex flex-wrap gap-2 mb-2"><span v-for="t in form.tags" @click="removeTag(t)" class="bg-morandi-accent text-white px-3 py-1 rounded-full text-xs cursor-pointer">#{{t}} ✕</span></div><input v-model="ui.tempTag" @keyup.enter="addTag" type="text" placeholder="輸入後按回車..."></div>
+                <div><label>備註</label><textarea v-model="form.note" rows="2"></textarea></div>
+                <button @click="saveKol" class="w-full py-5 bg-morandi-accent text-white rounded-2xl font-black text-xl shadow-lg active:scale-95 transition">儲存資料</button>
             </div>
         </div>
     </div>
 
-    <!-- 同步試算表彈窗 -->
-    <div v-if="showSyncModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-earth-charcoal/90 backdrop-blur-md p-6">
-        <div class="w-full max-w-sm glass rounded-[40px] p-8 slide-up">
-            <h2 class="text-xl font-black mb-2 text-center text-earth-camel">同步至試算表</h2>
-            <p class="text-[10px] mb-8 opacity-60 text-center tracking-[0.3em] uppercase">Select Active User</p>
-            <div class="flex flex-col gap-3">
-                <button v-for="u in ['媽咪', 'Winnie', '蟬說']" :key="u" @click="syncUser = u"
-                    :class="syncUser === u ? 'border-2 border-earth-terracotta bg-earth-terracotta text-white' : 'bg-white/10 text-white'"
-                    class="p-5 rounded-2xl text-center font-bold transition-all active:scale-95">{{ u }}</button>
+    <div v-if="ui.syncModal" class="fixed inset-0 z-[110] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="ui.syncModal = false"></div>
+        <div class="glass-card w-full max-w-md p-8 relative z-[111] text-center">
+            <h2 class="text-2xl font-black mb-4">同步雲端</h2>
+            <p class="mb-6 font-bold text-morandi-green">待同步：{{ unsyncedKols.length }} 筆</p>
+            <div class="grid grid-cols-1 gap-3 mb-6">
+                <button v-for="u in ['媽咪','Winnie','蟬說']" @click="syncUser = u" :class="syncUser === u ? 'bg-morandi-accent text-white shadow-md' : 'glass'" class="py-4 rounded-xl font-bold transition">{{u}}</button>
             </div>
-            <div class="flex gap-4 mt-10">
-                <button @click="showSyncModal = false" class="flex-1 p-4 rounded-2xl bg-white/10 text-white text-xs">取消</button>
-                <button @click="submitToGoogleSheet" :disabled="!syncUser || isSyncing" class="flex-1 p-4 rounded-2xl bg-earth-camel text-earth-charcoal font-bold disabled:opacity-20 text-xs transition-all">
-                    {{ isSyncing ? '同步中...' : '確認上傳' }}
-                </button>
-            </div>
+            <input v-model="syncUserCustom" type="text" placeholder="或自訂更新者..." class="mb-6 text-center">
+            <button @click="executeSync" :disabled="ui.syncing || unsyncedKols.length === 0" class="w-full py-5 bg-morandi-green text-white rounded-2xl font-black text-xl disabled:opacity-30 active:scale-95 transition">
+                {{ ui.syncing ? '同步中...' : '確認發送' }}
+            </button>
         </div>
     </div>
 
-    <script>
-        const { createApp, ref, computed, onMounted } = Vue;
+    <div v-if="ui.toast" class="fixed top-10 left-1/2 -translate-x-1/2 z-[200] bg-slate-800 text-white px-8 py-4 rounded-full shadow-2xl font-bold animate-pulse">{{ ui.toastMsg }}</div>
+</div>
 
-        createApp({
-            setup() {
-                const isDark = ref(false);
-                const showModal = ref(false);
-                const showSyncModal = ref(false);
-                const isEditing = ref(false);
-                const activeTab = ref('list');
-                const isSyncing = ref(false);
+<script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
 
-                const kolList = ref(JSON.parse(localStorage.getItem('kol_data_final') || '[]'));
-                const allTags = ref(JSON.parse(localStorage.getItem('kol_tags_final') || '["美妝", "育兒", "美食", "旅遊", "部落客"]'));
-                const selectedFilters = ref([]);
+    createApp({
+        setup() {
+            const isDark = ref(localStorage.getItem('theme') === 'dark');
+            const kols = ref(JSON.parse(localStorage.getItem('kols') || '[]'));
+            const allCategories = ref(['親子', '旅遊', '美食', '穿搭', '美妝', '生活', '科技']);
+            const rankOptions = [{name:'寶寶網紅'}, {name:'一般網紅'}, {name:'大網紅'}, {name:'鑽石級網紅'}];
+            const viewDate = ref(new Date());
+
+            const ui = reactive({ tab: 'list', modal: false, syncModal: false, syncing: false, showFilterSystem: false, tempTag: '', toast: false, toastMsg: '' });
+            const filterState = reactive({ tags: [], ranks: [] });
+            const form = reactive({ id: null, name: '', url: '', platform: '', rank: '寶寶網紅', tags: [], note: '', createdAt: '', synced: false });
+            const syncUser = ref('媽咪');
+            const syncUserCustom = ref('');
+
+            const unsyncedKols = computed(() => kols.value.filter(k => !k.synced));
+            const calendarTitle = computed(() => `${viewDate.value.getFullYear()} 年 ${viewDate.value.getMonth() + 1} 月`);
+            
+            const filteredKols = computed(() => {
+                let res = [...kols.value];
+                if (filterState.tags.length > 0) res = res.filter(k => k.tags.some(t => filterState.tags.includes(t)));
+                return res.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            });
+
+            const toggleFilterTag = (tag) => {
+                const idx = filterState.tags.indexOf(tag);
+                if (idx > -1) filterState.tags.splice(idx, 1); else filterState.tags.push(tag);
+            };
+
+            const autoFill = () => {
+                if (!form.url) return;
+                try {
+                    const url = new URL(form.url.startsWith('http') ? form.url : 'https://' + form.url);
+                    const host = url.hostname.toLowerCase();
+                    const path = url.pathname.split('/').filter(p => p);
+                    if (host.includes('instagram')) { form.platform = 'Instagram'; form.name = '@' + (path[0] || '帳號'); }
+                    else if (host.includes('facebook')) { form.platform = 'Facebook'; form.name = path[0] || 'FB粉專'; }
+                    else { form.platform = '其他'; form.name = host; }
+                } catch(e) { alert('網址無效'); }
+            };
+
+            const saveKol = () => {
+                if (!form.name || !form.url) return alert('必填未填');
                 
-                const form = ref({
-                    id: null, name: '', primaryLink: '', tier: '寶寶網紅', tags: [],
-                    platforms: { ig: '', fb: '', xhs: '', yt: '', tiktok: '', blog: '' },
-                    note: '', createdAt: ''
-                });
+                // 重複檢查
+                const dupIdx = kols.value.findIndex(k => k.url === form.url && k.id !== form.id);
+                if (dupIdx > -1) {
+                    if (!confirm(`偵測到重複連結：${kols.value[dupIdx].name}\n是否要刪除原資料並覆蓋？`)) return;
+                    kols.value.splice(dupIdx, 1);
+                }
 
-                const newTagName = ref('');
-                const syncUser = ref('');
+                if (form.id) {
+                    const i = kols.value.findIndex(k => k.id === form.id);
+                    kols.value[i] = { ...form, synced: false };
+                } else {
+                    kols.value.unshift({ ...form, id: Date.now(), createdAt: new Date().toLocaleString('zh-TW',{hour12:false}), synced: false });
+                }
+                localStorage.setItem('kols', JSON.stringify(kols.value));
+                ui.modal = false;
+                showToast('已儲存資料');
+            };
 
-                const getTierColor = (tier) => {
-                    const colors = { '寶寶網紅': '#bd9a83', '網紅': '#a7623d', '鑽石級網紅': '#b55c3e', '大網紅(50000以上)': '#4a3731' };
-                    return colors[tier] || '#ccc';
-                };
+            const executeSync = async () => {
+                if (unsyncedKols.value.length === 0) return;
+                ui.syncing = true;
+                const updater = syncUserCustom.value || syncUser.value;
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbzAFMdwbeGbh7FO-3HH638NSrDg8SXlTpnNIgKTdvmUM8MPN3g3ipqHLuPTXjCBTpg/exec';
+                
+                const dataToSync = unsyncedKols.value.map(k => ({
+                    time: k.createdAt,
+                    mainPlatform: k.platform,
+                    name: k.name,
+                    tier: k.rank,
+                    category: k.tags.join(','),
+                    link: k.url,
+                    updater: updater, // 這裡傳遞更新者名稱給後端
+                    note: k.note
+                }));
 
-                const getIcon = (p) => {
-                    const icons = {
-                        ig: 'https://cdn-icons-png.flaticon.com/512/174/174855.png',
-                        fb: 'https://cdn-icons-png.flaticon.com/512/733/733547.png',
-                        xhs: 'https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/3d/8d/68/3d8d6892-2580-c081-9b1a-853f6068257d/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-10.png/512x512bb.jpg',
-                        yt: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png',
-                        tiktok: 'https://cdn-icons-png.flaticon.com/512/3046/3046121.png',
-                        blog: 'https://cdn-icons-png.flaticon.com/512/60/60736.png'
-                    };
-                    return icons[p];
-                };
+                try {
+                    // 使用 no-cors 盲發，注意：後端 GAS 腳本也必須能解析 JSON.parse(e.postData.contents)
+                    await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dataToSync) });
+                    kols.value.forEach(k => { if(!k.synced) k.synced = true; });
+                    localStorage.setItem('kols', JSON.stringify(kols.value));
+                    alert(`同步發送完成！筆數：${dataToSync.length}\n請至試算表確認是否寫入成功。`);
+                    ui.syncModal = false;
+                } catch (e) { 
+                    alert('網路傳輸發生錯誤'); 
+                } finally { 
+                    ui.syncing = false; 
+                }
+            };
 
-                const toggleDarkMode = () => {
-                    isDark.value = !isDark.value;
-                    document.documentElement.classList.toggle('dark');
-                    setTimeout(() => lucide.createIcons(), 10);
-                };
+            const deleteKol = (id) => { if(confirm('確定刪除？')){ kols.value = kols.value.filter(k => k.id !== id); localStorage.setItem('kols', JSON.stringify(kols.value)); } };
+            const toggleDarkMode = () => { isDark.value = !isDark.value; document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', isDark.value?'dark':'light'); };
+            const getPlatformIcon = (url) => { if(url.includes('instagram')) return 'fab fa-instagram'; if(url.includes('facebook')) return 'fab fa-facebook'; return 'fas fa-link'; };
+            const showToast = (m) => { ui.toastMsg = m; ui.toast = true; setTimeout(()=>ui.toast=false, 2000); };
+            const openModal = () => { Object.assign(form, { id:null, name:'', url:'', platform:'', rank:'寶寶網紅', tags:[], note:'', synced:false }); ui.modal = true; };
+            const editKol = (k) => { Object.assign(form, JSON.parse(JSON.stringify(k))); ui.modal = true; };
+            const addTag = () => { if(ui.tempTag && !form.tags.includes(ui.tempTag)){ form.tags.push(ui.tempTag); ui.tempTag=''; } };
+            const removeTag = (t) => { form.tags = form.tags.filter(tag => tag !== t); };
+            const changeMonth = (d) => { viewDate.value = new Date(viewDate.value.getFullYear(), viewDate.value.getMonth() + d, 1); };
 
-                const openAddModal = () => {
-                    isEditing.value = false;
-                    form.value = { id: Date.now(), name: '', primaryLink: '', tier: '寶寶網紅', tags: [], platforms: { ig: '', fb: '', xhs: '', yt: '', tiktok: '', blog: '' }, note: '', createdAt: '' };
-                    showModal.value = true;
-                    setTimeout(() => lucide.createIcons(), 50);
-                };
+            const calendarDays = computed(() => {
+                const y = viewDate.value.getFullYear(), m = viewDate.value.getMonth();
+                const start = new Date(y, m, 1), end = new Date(y, m + 1, 0);
+                const res = [];
+                for(let i=0; i<start.getDay(); i++) res.push({ day:'', full:'p'+i, count:0, isCurrentMonth:false });
+                for(let i=1; i<=end.getDate(); i++) {
+                    const dateStr = new Date(y, m, i).toLocaleDateString();
+                    const count = kols.value.filter(k => new Date(k.createdAt).toLocaleDateString() === dateStr).length;
+                    res.push({ day:i, full:dateStr, count, isCurrentMonth:true });
+                }
+                return res;
+            });
 
-                const handleAutoParse = () => {
-                    const url = form.value.primaryLink.trim();
-                    if (!url) return;
-                    let handle = '';
-                    if (url.includes('instagram.com/')) {
-                        handle = url.split('instagram.com/')[1].split('/')[0].split('?')[0];
-                        form.value.platforms.ig = url;
-                    } else if (url.includes('facebook.com/')) {
-                        handle = url.split('facebook.com/')[1].split('/')[0].split('?')[0];
-                        form.value.platforms.fb = url;
-                    } else if (url.includes('youtube.com/')) {
-                        handle = url.split('@')[1] ? url.split('@')[1].split('/')[0] : 'Youtube頻道';
-                        form.value.platforms.yt = url;
-                    } else if (url.includes('tiktok.com/@')) {
-                        handle = url.split('@')[1].split('/')[0];
-                        form.value.platforms.tiktok = url;
-                    }
-                    if (handle) form.value.name = handle;
-                };
+            onMounted(() => { if(isDark.value) document.documentElement.classList.add('dark'); });
 
-                const saveKOL = () => {
-                    if (!form.value.name) return alert('請填寫網紅名稱/帳號');
-                    if (!isEditing.value) {
-                        const now = new Date();
-                        form.value.createdAt = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-                        kolList.value.unshift({ ...form.value });
-                    } else {
-                        const idx = kolList.value.findIndex(k => k.id === form.value.id);
-                        kolList.value[idx] = { ...form.value };
-                    }
-                    saveToLocal();
-                    showModal.value = false;
-                    setTimeout(() => lucide.createIcons(), 10);
-                };
+            return { isDark, kols, ui, form, filterState, rankOptions, allCategories, calendarTitle, filteredKols, unsyncedKols, calendarDays, syncUser, syncUserCustom, toggleDarkMode, openModal, editKol, deleteKol, saveKol, executeSync, getPlatformIcon, autoFill, addTag, removeTag, changeMonth, toggleFilterTag };
+        }
+    }).mount('#app');
+</script>
 
-                const deleteKOL = (id) => {
-                    if (confirm('確定要刪除這位網紅嗎？')) {
-                        kolList.value = kolList.value.filter(k => k.id !== id);
-                        saveToLocal();
-                    }
-                };
-
-                const editKOL = (kol) => {
-                    isEditing.value = true;
-                    form.value = JSON.parse(JSON.stringify(kol));
-                    showModal.value = true;
-                    setTimeout(() => lucide.createIcons(), 50);
-                };
-
-                const deleteGlobalTag = (tag) => {
-                    if(confirm(`確定要永久刪除「${tag}」標籤嗎？`)) {
-                        allTags.value = allTags.value.filter(t => t !== tag);
-                        selectedFilters.value = selectedFilters.value.filter(t => t !== tag);
-                        saveToLocal();
-                    }
-                };
-
-                const toggleFilterTag = (tag) => {
-                    if (selectedFilters.value.includes(tag)) selectedFilters.value = selectedFilters.value.filter(t => t !== tag);
-                    else selectedFilters.value.push(tag);
-                };
-
-                const toggleFormTag = (tag) => {
-                    if (form.value.tags.includes(tag)) form.value.tags = form.value.tags.filter(t => t !== tag);
-                    else form.value.tags.push(tag);
-                };
-
-                const addNewTag = () => {
-                    const t = newTagName.value.trim();
-                    if (t && !allTags.value.includes(t)) {
-                        allTags.value.push(t);
-                        form.value.tags.push(t);
-                        newTagName.value = '';
-                        saveToLocal();
-                    }
-                };
-
-                const saveToLocal = () => {
-                    localStorage.setItem('kol_data_final', JSON.stringify(kolList.value));
-                    localStorage.setItem('kol_tags_final', JSON.stringify(allTags.value));
-                };
-
-                const filteredList = computed(() => {
-                    if (selectedFilters.value.length === 0) return kolList.value;
-                    return kolList.value.filter(k => selectedFilters.value.every(f => k.tags.includes(f)));
-                });
-
-                const openSyncModal = () => {
-                    activeTab.value = 'sync';
-                    showSyncModal.value = true;
-                    setTimeout(() => lucide.createIcons(), 50);
-                };
-
-                const submitToGoogleSheet = async () => {
-                    if (kolList.value.length === 0) return alert('清單為空，無法同步');
-                    isSyncing.value = true;
-                    // 已更新為新的重新部署連結
-                    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAFMdwbeGbh7FO-3HH638NSrDg8SXlTpnNIgKTdvmUM8MPN3g3ipqHLuPTXjCBTpg/exec'; 
-                    try {
-                        await fetch(SCRIPT_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ user: syncUser.value, data: kolList.value })
-                        });
-                        alert(`【${syncUser.value}】同步指令已發送！請稍後檢查試算表是否新增成功。`);
-                        showSyncModal.value = false;
-                        activeTab.value = 'list';
-                    } catch (e) {
-                        alert('同步失敗，請確認網路或 GAS 權限設置。');
-                    } finally {
-                        isSyncing.value = false;
-                    }
-                };
-
-                onMounted(() => {
-                    lucide.createIcons();
-                });
-
-                return {
-                    isDark, showModal, showSyncModal, isEditing, activeTab, isSyncing,
-                    kolList, allTags, selectedFilters, form, newTagName, syncUser,
-                    filteredList, toggleDarkMode, openAddModal, handleAutoParse, 
-                    saveKOL, deleteKOL, editKOL, toggleFilterTag, toggleFormTag, deleteGlobalTag,
-                    addNewTag, getTierColor, getIcon, openSyncModal, submitToGoogleSheet
-                };
-            }
-        }).mount('#app');
-    </script>
+<style>
+    @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+</style>
 </body>
 </html>
